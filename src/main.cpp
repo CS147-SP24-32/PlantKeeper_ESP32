@@ -19,7 +19,7 @@
 
 const char* ssid = WIFI_SSID;  // define in secrets.h
 const char* pass = WIFI_PASS;  // set to NULL for open network
-const char* host = LAMBDA_URL;
+const char* statusUrl = LAMBDA_URL;
 
 
 void setup() {
@@ -62,14 +62,16 @@ void loop() {
     WiFiClientSecure client;
     HTTPClient http;
     client.setInsecure();
-    String url = url + "?moisture=" + percentMoisture;
-    Serial.printf("Connecting to URL: %s", url.c_str());
+    JsonDocument requestData;
+    requestData['pctMoisture'] = percentMoisture;
+    String httpBody;
+    serializeJson(requestData, httpBody);
+    Serial.printf("Connecting to URL: %s", statusUrl);
+    http.begin(client, statusUrl);
 
-    http.begin(client, url);
-    const int httpResponseCode = http.GET();
+    const int httpResponseCode = http.POST(httpBody);
 
     if (httpResponseCode == 200) {
-      String payload = http.getString();
       JsonDocument doc;
       DeserializationError error = deserializeJson(doc, http.getStream());
       if (error.code() != ArduinoJson::DeserializationError::Ok) {
